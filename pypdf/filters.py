@@ -1,9 +1,10 @@
 # -*- coding: UTF-8 -*-
 # vim: sw=4:expandtab:foldmethod=marker
 #
-# Copyright (c) 2006, Mathieu Fenniak
-# All rights reserved.
-#
+# Copyright (c) 2006-2008, Mathieu Fenniak
+# Some contributions copyright (c) 2007, Ashish Kulkarni kulkarni.ashish@gmail.com
+# Some contributions copyright (c) 2014, Steve Witham switham_github@mac-guyver.com
+# Some contributions copyright (c) 2020, Simon Junod sj@simonjunod.ch
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
@@ -149,12 +150,13 @@ class FlateCodec(object):
             # The /Columns param. has 1 as the default value; see ISO 32000,
             # §7.4.4.3 LZWDecode and FlateDecode Parameters, Table 8
             columns = decodeParms.get("/Columns", 1)
+            colors = decodeParms.get("/Colors", 8)
 
             # PNG prediction:
             if 10 <= predictor <= 15:
-                output = BytesIO()
+                output = BytesIO() ### BytesIO au lieu de StringIO, car PIL attend des bytes (Pas de mon fait)
                 # PNG prediction can vary from row to row
-                row_length = columns + 1
+                row_length = columns * colors + 1
                 assert len(data) % row_length == 0
                 prev_rowdata = (0, ) * row_length
 
@@ -168,8 +170,13 @@ class FlateCodec(object):
                     if filterByte == 0:
                         pass
                     elif filterByte == 1:
-                        for i in range(2, row_length):
-                            rowdata[i] = (rowdata[i] + rowdata[i - 1]) % 256
+                        for i in range(1, row_length):
+                            if i <= 3: ### On vise hors de la limite gauche, donc 0 (as per les specs)
+                                rowdata[i] = (rowdata[i] + 0) % 256
+                            else:
+                                rowdata[i] = (rowdata[i] + rowdata[i - colors]) % 256 ### Pas le byte d'avant ! Son homologue dans le pixel d'avant
+                                                                                      ### (TODO : vérifier si le bitdepth < 8, auquel cas il faut
+                                                                                      ### bel et bien prendre simplement le byte d'avant)
                     elif filterByte == 2:
                         for i in range(1, row_length):
                             rowdata[i] = (rowdata[i] + prev_rowdata[i]) % 256
@@ -193,7 +200,7 @@ class FlateCodec(object):
 
                     prev_rowdata = rowdata
 
-                    for d in rowdata:
+                    for d in rowdata[1:]: ### Ignorer le premier bit de chaque scanline
                         if version_info < (3, 0):
                             output.write(chr(d))
                         else:
