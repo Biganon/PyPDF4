@@ -1,6 +1,7 @@
 Copyright (c) 2006-2008, Mathieu Fenniak
 Some contributions copyright (c) 2007, Ashish Kulkarni <kulkarni.ashish@gmail.com>
 Some contributions copyright (c) 2014, Steve Witham <switham_github@mac-guyver.com>
+Some contributions copyright (c) 2020, Simon Junod <sj@simonjunod.ch>
 
 All rights reserved.
 
